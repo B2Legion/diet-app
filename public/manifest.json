@@ -1,6 +1,6 @@
 {
-  "name": "Diet Plan",
-  "short_name": "Diet Plan",
+  "name": "DietMe!",
+  "short_name": "DietMe!",
   "description": "Nutritional Recovery Meal Plan — Pure Vegetarian",
   "start_url": "/",
   "display": "standalone",
