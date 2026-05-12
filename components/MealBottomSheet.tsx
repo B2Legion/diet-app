@@ -10,34 +10,39 @@ interface Props {
 function getSwiggyUrls(meal: string) {
   const q = encodeURIComponent(meal);
   return {
-    cheapest: `https://www.swiggy.com/search?query=${q}&sortAttribute=PRICE`,
-    fastest: `https://www.swiggy.com/search?query=${q}&sortAttribute=DELIVERY_TIME`,
-    appSearch: `swiggy://search?query=${q}`,
-    webSearch: `https://www.swiggy.com/search?query=${q}`,
+    // App schemes — open Swiggy app with search
+    appCheapest: `swiggy://restaurants/list?query=${q}&sortAttribute=PRICE`,
+    appFastest:  `swiggy://restaurants/list?query=${q}&sortAttribute=DELIVERY_TIME`,
+    appSearch:   `swiggy://restaurants/list?query=${q}`,
+    // Web fallbacks
+    webCheapest: `https://www.swiggy.com/search?query=${q}&sortAttribute=PRICE`,
+    webFastest:  `https://www.swiggy.com/search?query=${q}&sortAttribute=DELIVERY_TIME`,
+    webSearch:   `https://www.swiggy.com/search?query=${q}`,
   };
 }
 
 function getZomatoUrls(meal: string) {
   const q = encodeURIComponent(meal);
   return {
-    cheapest: `https://www.zomato.com/search?q=${q}&sort=cost_asc`,
-    fastest: `https://www.zomato.com/search?q=${q}&sort=delivery_time`,
-    appSearch: `zomato://search?q=${q}`,
-    webSearch: `https://www.zomato.com/search?q=${q}`,
+    // App schemes — open Zomato app with search
+    appCheapest: `zomato://search?q=${q}&sort=cost_asc`,
+    appFastest:  `zomato://search?q=${q}&sort=delivery_time`,
+    appSearch:   `zomato://search?q=${q}`,
+    // Web fallbacks
+    webCheapest: `https://www.zomato.com/search?q=${q}&sort=cost_asc`,
+    webFastest:  `https://www.zomato.com/search?q=${q}&sort=delivery_time`,
+    webSearch:   `https://www.zomato.com/search?q=${q}`,
   };
 }
 
 // Try to open the app via URI scheme; fall back to web URL after 1.2s if app isn't installed
 function openAppWithFallback(appScheme: string, webUrl: string) {
   const start = Date.now();
-
-  // When the app opens, the page loses focus — cancel the fallback
   const onBlur = () => clearTimeout(timer);
   window.addEventListener("blur", onBlur, { once: true });
 
   const timer = setTimeout(() => {
     window.removeEventListener("blur", onBlur);
-    // Only redirect if not much time has passed (app didn't open)
     if (Date.now() - start < 1500) {
       window.open(webUrl, "_blank", "noopener");
     }
@@ -47,7 +52,6 @@ function openAppWithFallback(appScheme: string, webUrl: string) {
 }
 
 function OrderButton({
-  href,
   appScheme,
   webFallback,
   icon,
@@ -55,33 +59,22 @@ function OrderButton({
   sublabel,
   color,
 }: {
-  href?: string;
-  appScheme?: string;
-  webFallback?: string;
+  appScheme: string;
+  webFallback: string;
   icon: string;
   label: string;
   sublabel: string;
   color: string;
 }) {
-  const handleClick = (e: React.MouseEvent) => {
-    if (appScheme && webFallback) {
-      e.preventDefault();
-      openAppWithFallback(appScheme, webFallback);
-    }
-  };
-
   return (
-    <a
-      href={href ?? webFallback ?? "#"}
-      target={appScheme ? undefined : "_blank"}
-      rel="noopener noreferrer"
-      onClick={appScheme ? handleClick : undefined}
+    <button
+      onClick={() => openAppWithFallback(appScheme, webFallback)}
       className={`flex flex-col items-center justify-center gap-1 rounded-2xl py-3 px-2 flex-1 active:scale-95 transition-transform ${color}`}
     >
       <span className="text-xl">{icon}</span>
       <span className="text-xs font-bold leading-tight text-center">{label}</span>
       <span className="text-[10px] opacity-70 text-center leading-tight">{sublabel}</span>
-    </a>
+    </button>
   );
 }
 
@@ -148,14 +141,16 @@ export default function MealBottomSheet({ mealName, onClose }: Props) {
               </div>
               <div className="bg-orange-50 p-3 flex gap-2">
                 <OrderButton
-                  href={swiggy.cheapest}
+                  appScheme={swiggy.appCheapest}
+                  webFallback={swiggy.webCheapest}
                   icon="💰"
                   label="Cheapest"
                   sublabel="Sort by price"
                   color="bg-white border border-orange-200 text-orange-800"
                 />
                 <OrderButton
-                  href={swiggy.fastest}
+                  appScheme={swiggy.appFastest}
+                  webFallback={swiggy.webFastest}
                   icon="⚡"
                   label="Fastest"
                   sublabel="Sort by time"
@@ -187,14 +182,16 @@ export default function MealBottomSheet({ mealName, onClose }: Props) {
               </div>
               <div className="bg-red-50 p-3 flex gap-2">
                 <OrderButton
-                  href={zomato.cheapest}
+                  appScheme={zomato.appCheapest}
+                  webFallback={zomato.webCheapest}
                   icon="💰"
                   label="Cheapest"
                   sublabel="Sort by price"
                   color="bg-white border border-red-200 text-red-800"
                 />
                 <OrderButton
-                  href={zomato.fastest}
+                  appScheme={zomato.appFastest}
+                  webFallback={zomato.webFastest}
                   icon="⚡"
                   label="Fastest"
                   sublabel="Sort by time"
