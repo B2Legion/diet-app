@@ -12,7 +12,8 @@ function getSwiggyUrls(meal: string) {
   return {
     cheapest: `https://www.swiggy.com/search?query=${q}&sortAttribute=PRICE`,
     fastest: `https://www.swiggy.com/search?query=${q}&sortAttribute=DELIVERY_TIME`,
-    search: `https://www.swiggy.com/search?query=${q}`,
+    appSearch: `swiggy://search?query=${q}`,
+    webSearch: `https://www.swiggy.com/search?query=${q}`,
   };
 }
 
@@ -21,28 +22,60 @@ function getZomatoUrls(meal: string) {
   return {
     cheapest: `https://www.zomato.com/search?q=${q}&sort=cost_asc`,
     fastest: `https://www.zomato.com/search?q=${q}&sort=delivery_time`,
-    search: `https://www.zomato.com/search?q=${q}`,
+    appSearch: `zomato://search?q=${q}`,
+    webSearch: `https://www.zomato.com/search?q=${q}`,
   };
+}
+
+// Try to open the app via URI scheme; fall back to web URL after 1.2s if app isn't installed
+function openAppWithFallback(appScheme: string, webUrl: string) {
+  const start = Date.now();
+
+  // When the app opens, the page loses focus — cancel the fallback
+  const onBlur = () => clearTimeout(timer);
+  window.addEventListener("blur", onBlur, { once: true });
+
+  const timer = setTimeout(() => {
+    window.removeEventListener("blur", onBlur);
+    // Only redirect if not much time has passed (app didn't open)
+    if (Date.now() - start < 1500) {
+      window.open(webUrl, "_blank", "noopener");
+    }
+  }, 1200);
+
+  window.location.href = appScheme;
 }
 
 function OrderButton({
   href,
+  appScheme,
+  webFallback,
   icon,
   label,
   sublabel,
   color,
 }: {
-  href: string;
+  href?: string;
+  appScheme?: string;
+  webFallback?: string;
   icon: string;
   label: string;
   sublabel: string;
   color: string;
 }) {
+  const handleClick = (e: React.MouseEvent) => {
+    if (appScheme && webFallback) {
+      e.preventDefault();
+      openAppWithFallback(appScheme, webFallback);
+    }
+  };
+
   return (
     <a
-      href={href}
-      target="_blank"
+      href={href ?? webFallback ?? "#"}
+      target={appScheme ? undefined : "_blank"}
       rel="noopener noreferrer"
+      onClick={appScheme ? handleClick : undefined}
       className={`flex flex-col items-center justify-center gap-1 rounded-2xl py-3 px-2 flex-1 active:scale-95 transition-transform ${color}`}
     >
       <span className="text-xl">{icon}</span>
@@ -103,23 +136,16 @@ export default function MealBottomSheet({ mealName, onClose }: Props) {
           {/* Swiggy Panel */}
           {swiggy && (
             <div className="rounded-3xl overflow-hidden border border-orange-100">
-              {/* Swiggy header */}
               <div className="bg-[#FC8019] px-4 py-3 flex items-center gap-2">
                 <div className="bg-white rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0">
                   <svg viewBox="0 0 40 40" className="w-5 h-5" fill="none">
                     <circle cx="20" cy="20" r="20" fill="#FC8019" />
-                    <path
-                      d="M12 22c0-4.4 3.6-8 8-8s8 3.6 8 8"
-                      stroke="white"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
+                    <path d="M12 22c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" strokeWidth="3" strokeLinecap="round" />
                     <circle cx="20" cy="22" r="3" fill="white" />
                   </svg>
                 </div>
                 <span className="text-white font-black text-lg tracking-tight">swiggy</span>
               </div>
-              {/* Swiggy buttons */}
               <div className="bg-orange-50 p-3 flex gap-2">
                 <OrderButton
                   href={swiggy.cheapest}
@@ -136,10 +162,11 @@ export default function MealBottomSheet({ mealName, onClose }: Props) {
                   color="bg-white border border-orange-200 text-orange-800"
                 />
                 <OrderButton
-                  href={swiggy.search}
+                  appScheme={swiggy.appSearch}
+                  webFallback={swiggy.webSearch}
                   icon="🔍"
-                  label="Search"
-                  sublabel="Open Swiggy"
+                  label="Open App"
+                  sublabel="Opens Swiggy"
                   color="bg-[#FC8019] text-white"
                 />
               </div>
@@ -149,22 +176,15 @@ export default function MealBottomSheet({ mealName, onClose }: Props) {
           {/* Zomato Panel */}
           {zomato && (
             <div className="rounded-3xl overflow-hidden border border-red-100">
-              {/* Zomato header */}
               <div className="bg-[#E23744] px-4 py-3 flex items-center gap-2">
                 <div className="bg-white rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0">
                   <svg viewBox="0 0 40 40" className="w-5 h-5" fill="none">
                     <circle cx="20" cy="20" r="20" fill="#E23744" />
-                    <path
-                      d="M13 15h14M13 20h14M13 25h9"
-                      stroke="white"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    />
+                    <path d="M13 15h14M13 20h14M13 25h9" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
                   </svg>
                 </div>
                 <span className="text-white font-black text-lg tracking-tight">zomato</span>
               </div>
-              {/* Zomato buttons */}
               <div className="bg-red-50 p-3 flex gap-2">
                 <OrderButton
                   href={zomato.cheapest}
@@ -181,10 +201,11 @@ export default function MealBottomSheet({ mealName, onClose }: Props) {
                   color="bg-white border border-red-200 text-red-800"
                 />
                 <OrderButton
-                  href={zomato.search}
+                  appScheme={zomato.appSearch}
+                  webFallback={zomato.webSearch}
                   icon="🔍"
-                  label="Search"
-                  sublabel="Open Zomato"
+                  label="Open App"
+                  sublabel="Opens Zomato"
                   color="bg-[#E23744] text-white"
                 />
               </div>
