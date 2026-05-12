@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { mealPlan, tagConfig, type MealTag, type Meal } from "@/lib/mealData";
+import MealBottomSheet from "@/components/MealBottomSheet";
 
 const MEAL_SECTIONS = ["breakfast", "lunch", "dinner", "snacks"] as const;
 type MealSection = (typeof MEAL_SECTIONS)[number];
@@ -18,27 +19,42 @@ function getTodayIndex() {
   return day === 0 ? 6 : day - 1;
 }
 
-function MealCard({ meal, fatLossOnly }: { meal: Meal; fatLossOnly: boolean }) {
+function MealCard({
+  meal,
+  fatLossOnly,
+  onTap,
+}: {
+  meal: Meal;
+  fatLossOnly: boolean;
+  onTap: (name: string) => void;
+}) {
   if (fatLossOnly && meal.tag !== "fat-loss") return null;
   const cfg = tagConfig[meal.tag];
   return (
-    <div className={`rounded-2xl border p-4 mb-3 ${cfg.bg}`}>
+    <button
+      onClick={() => onTap(meal.name)}
+      className={`w-full text-left rounded-2xl border p-4 mb-3 ${cfg.bg} active:scale-[0.98] transition-transform`}
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="font-semibold text-gray-800 text-[15px] leading-snug flex-1">
           {meal.name}
         </p>
-        <span
-          className={`text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${cfg.color} bg-white/80 border`}
-        >
-          {cfg.label}
-        </span>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${cfg.color} bg-white/80 border`}>
+            {cfg.label}
+          </span>
+          <span className="text-gray-300 text-sm">›</span>
+        </div>
       </div>
       {meal.note && (
         <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
           {meal.note}
         </p>
       )}
-    </div>
+      <p className="text-[10px] text-gray-400 mt-2 font-medium">
+        Tap to order on Swiggy or Zomato
+      </p>
+    </button>
   );
 }
 
@@ -47,6 +63,7 @@ export default function MealApp() {
   const [selectedDay, setSelectedDay] = useState(todayIdx);
   const [activeSection, setActiveSection] = useState<MealSection>("breakfast");
   const [fatLossOnly, setFatLossOnly] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState<string | null>(null);
 
   const day = mealPlan[selectedDay];
   const meals = day[activeSection] as Meal[];
@@ -169,7 +186,12 @@ export default function MealApp() {
           </div>
         ) : (
           meals.map((meal, idx) => (
-            <MealCard key={idx} meal={meal} fatLossOnly={fatLossOnly} />
+            <MealCard
+              key={idx}
+              meal={meal}
+              fatLossOnly={fatLossOnly}
+              onTap={setSelectedMeal}
+            />
           ))
         )}
 
@@ -206,6 +228,12 @@ export default function MealApp() {
           </p>
         </div>
       </div>
+
+      {/* Order Bottom Sheet */}
+      <MealBottomSheet
+        mealName={selectedMeal}
+        onClose={() => setSelectedMeal(null)}
+      />
     </div>
   );
 }
